@@ -1,0 +1,26 @@
+# Python PDF Processing Service Requirements
+
+# Core PDF processing
+PyMuPDF>=1.23.0
+pytesseract>=0.3.10
+Pillow>=10.0.0
+
+# Text processing and NLP
+nltk>=3.8
+spacy>=3.7.0
+konlpy>=0.6.0  # Korean NLP
+
+# Optional: Language detection
+langdetect>=1.0.9
+
+# Optional: Advanced NLP
+transformers>=4.30.0
+sentence-transformers>=2.2.0
+
+# Utilities
+tqdm>=4.65.0
+python-dotenv>=1.0.0
+
+# Web service (if needed)
+fastapi>=0.100.0
+uvicorn>=0.22.0

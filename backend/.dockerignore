@@ -1,0 +1,61 @@
+# Node modules
+node_modules
+npm-debug.log
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+python_services/venv
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Uploads and logs
+uploads/*
+logs/*
+
+# IDE and editor files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Git
+.git
+.gitignore
+
+# Testing
+coverage
+*.lcov
+
+# Build files
+dist
+build
+
+# Documentation
+README.md
+QUICK_START.md
+setup.sh
+setup.bat
+
+# Docker files
+Dockerfile
+docker-compose.yml
+.dockerignore

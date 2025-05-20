@@ -1,0 +1,49 @@
+# Python PDF Service Dockerfile
+FROM python:3.11-slim
+
+# Install system dependencies for PDF processing
+RUN apt-get update && apt-get install -y \
+    poppler-utils \
+    tesseract-ocr \
+    tesseract-ocr-kor \
+    tesseract-ocr-eng \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy Python requirements
+COPY python_services/requirements.txt ./
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Download required NLP models
+RUN python -m spacy download ko_core_news_sm || echo "Korean model not available"
+RUN python -m nltk.downloader punkt stopwords
+
+# Copy Python source files
+COPY python_services/ ./
+
+# Create uploads directory
+RUN mkdir -p uploads
+
+# Set environment variables
+ENV PYTHONPATH=/app
+ENV TESSDATA_PREFIX=/usr/share/tesseract-ocr/4.00/tessdata
+
+# Expose port
+EXPOSE 8001
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8001/health || exit 1
+
+# Run the FastAPI application
+CMD ["python", "pdf_service.py"]
