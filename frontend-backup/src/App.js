@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { ChakraProvider, Box, Container } from '@chakra-ui/react';
+import { ChakraProvider, CSSReset, Box, Container } from '@chakra-ui/react';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import HomePage from './pages/HomePage';
@@ -9,11 +9,11 @@ import QuizGenerationPage from './pages/QuizGenerationPage';
 import QuizAttemptPage from './pages/QuizAttemptPage';
 import QuizResultPage from './pages/QuizResultPage';
 import SavedQuizzesPage from './pages/SavedQuizzesPage';
-import theme from './theme';
 
 function App() {
   return (
-    <ChakraProvider theme={theme}>
+    <ChakraProvider>
+      <CSSReset />
       <Router>
         <Box minHeight="100vh" display="flex" flexDirection="column">
           <Header />

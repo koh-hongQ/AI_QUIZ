@@ -3,20 +3,13 @@ import vectorSearchService from './vectorSearchService.js';
 import config from '../config/pythonServiceConfig.js';
 
 /**
- * Quiz Generation Service with Mock Mode
+ * Quiz Generation Service using LLM
  */
 class QuizGenerationService {
   constructor() {
-    this.mockMode = !process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY === 'mock';
-    
-    if (this.mockMode) {
-      console.log('🎭 Quiz Generation Service running in MOCK MODE - No OpenAI API key required');
-      this.openai = null;
-    } else {
-      this.openai = new OpenAI({
-        apiKey: process.env.OPENAI_API_KEY
-      });
-    }
+    this.openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY
+    });
   }
 
   /**
@@ -30,19 +23,14 @@ class QuizGenerationService {
    */
   async generateQuiz(documentId, documentName, quizType, questionCount, customQuery = '') {
     try {
-      // Mock mode: Generate sample quiz without API
-      if (this.mockMode) {
-        console.log('Generating mock quiz for testing...');
-        return this._generateMockQuiz(documentId, documentName, quizType, questionCount, customQuery);
-      }
-
-      // Normal mode with OpenAI
+      // 1. Get relevant content from the document
       const relevantChunks = await this._getRelevantContent(documentId, customQuery, questionCount * 2);
       
       if (relevantChunks.length === 0) {
         throw new Error('No relevant content found for quiz generation');
       }
 
+      // 2. Generate quiz based on the content and type
       const quiz = await this._generateQuizFromContent(
         relevantChunks,
         quizType,
@@ -59,82 +47,17 @@ class QuizGenerationService {
   }
 
   /**
-   * Generate mock quiz for testing without OpenAI
-   * @private
-   */
-  _generateMockQuiz(documentId, documentName, quizType, questionCount, customQuery) {
-    const questions = [];
-    const topics = [
-      'Machine Learning', 'Data Science', 'Neural Networks', 
-      'Deep Learning', 'Computer Vision', 'Natural Language Processing',
-      'Reinforcement Learning', 'Feature Engineering', 'Model Evaluation'
-    ];
-
-    for (let i = 0; i < questionCount; i++) {
-      const topic = topics[i % topics.length];
-      
-      if (quizType === 'mcq' || (quizType === 'mixed' && i % 3 === 0)) {
-        questions.push({
-          id: `q${i + 1}`,
-          type: 'mcq',
-          question: `Which of the following best describes ${topic}?`,
-          options: [
-            `${topic} is a method for data analysis`,
-            `${topic} is a type of algorithm`,
-            `${topic} is a programming language`,
-            `${topic} is a database system`
-          ],
-          correctAnswer: Math.floor(Math.random() * 4),
-          explanation: `This is a mock explanation for ${topic}. In a real scenario, this would explain why the answer is correct based on the document content.`
-        });
-      } else if (quizType === 'truefalse' || (quizType === 'mixed' && i % 3 === 1)) {
-        questions.push({
-          id: `q${i + 1}`,
-          type: 'truefalse',
-          question: `${topic} is commonly used in modern AI applications.`,
-          correctAnswer: Math.random() > 0.5,
-          explanation: `Mock explanation: ${topic} ${Math.random() > 0.5 ? 'is indeed' : 'is not always'} used in AI applications.`
-        });
-      } else if (quizType === 'essay' || (quizType === 'mixed' && i % 3 === 2)) {
-        questions.push({
-          id: `q${i + 1}`,
-          type: 'essay',
-          question: `Explain the key concepts and applications of ${topic}. Provide examples where applicable.`,
-          sampleAnswer: `Mock sample answer: ${topic} is an important concept in AI/ML. Key points include: 1) Definition and basic principles, 2) Common applications, 3) Advantages and limitations, 4) Real-world examples.`,
-          explanation: `This essay question tests understanding of ${topic} concepts.`
-        });
-      }
-    }
-
-    const quiz = {
-      title: customQuery ? `Quiz: ${customQuery}` : `Mock Quiz on ${documentName}`,
-      questions,
-      metadata: {
-        mockMode: true,
-        generatedAt: new Date().toISOString(),
-        documentId,
-        questionCount
-      }
-    };
-
-    console.log(`Generated mock quiz with ${questions.length} questions`);
-    return quiz;
-  }
-
-  /**
    * Get relevant content for quiz generation
    * @private
    */
   async _getRelevantContent(documentId, customQuery, topK) {
     try {
-      // In mock mode, return sample chunks
-      if (this.mockMode) {
-        return this._getMockChunks(documentId, topK);
-      }
-
       if (customQuery) {
+        // Use custom query to find relevant content
         return await vectorSearchService.searchWithQuery(customQuery, documentId, topK);
       } else {
+        // Get a representative sample of content from the document
+        // Use a general query to get diverse content
         const generalQueries = [
           'important concepts and definitions',
           'key procedures and methods',
@@ -148,45 +71,14 @@ class QuizGenerationService {
           allChunks.push(...chunks);
         }
 
+        // Remove duplicates and sort by score
         const uniqueChunks = this._removeDuplicateChunks(allChunks);
         return uniqueChunks.slice(0, topK);
       }
     } catch (error) {
       console.error('Error getting relevant content:', error);
-      // Return mock chunks if vector search fails
-      return this._getMockChunks(documentId, topK);
+      throw error;
     }
-  }
-
-  /**
-   * Generate mock chunks for testing
-   * @private
-   */
-  _getMockChunks(documentId, count) {
-    const mockContent = [
-      "Machine learning is a subset of artificial intelligence that enables systems to learn and improve from experience without being explicitly programmed.",
-      "Deep learning uses neural networks with multiple layers to progressively extract higher-level features from raw input.",
-      "Natural Language Processing (NLP) is a branch of AI that helps computers understand, interpret and manipulate human language.",
-      "Computer vision enables machines to interpret and make decisions based on visual data from the world.",
-      "Reinforcement learning is an area of machine learning where an agent learns to make decisions by taking actions in an environment.",
-      "Feature engineering is the process of using domain knowledge to extract features from raw data that make machine learning algorithms work.",
-      "Cross-validation is a resampling procedure used to evaluate machine learning models on a limited data sample.",
-      "Gradient descent is an optimization algorithm used to minimize the cost function in machine learning models."
-    ];
-
-    const chunks = [];
-    for (let i = 0; i < Math.min(count, mockContent.length); i++) {
-      chunks.push({
-        id: `chunk_${i}`,
-        content: mockContent[i],
-        score: 0.9 - (i * 0.05),
-        document_id: documentId,
-        page_number: Math.floor(i / 2) + 1,
-        index: i
-      });
-    }
-
-    return chunks;
   }
 
   /**
@@ -200,7 +92,7 @@ class QuizGenerationService {
       const prompt = this._buildQuizPrompt(content, quizType, questionCount, documentName, customQuery);
       
       const response = await this.openai.chat.completions.create({
-        model: config.quizGeneration.openaiModel || 'gpt-3.5-turbo',
+        model: config.quizGeneration.openaiModel,
         messages: [
           {
             role: 'system',
@@ -211,10 +103,11 @@ class QuizGenerationService {
             content: prompt
           }
         ],
-        temperature: config.quizGeneration.temperature || 0.7,
-        max_tokens: config.quizGeneration.maxTokens || 2000
+        temperature: config.quizGeneration.temperature,
+        max_tokens: config.quizGeneration.maxTokens
       });
 
+      // Parse the response
       const quizContent = response.choices[0].message.content;
       const quiz = this._parseQuizResponse(quizContent, quizType, documentName);
       
@@ -238,6 +131,7 @@ class QuizGenerationService {
 
     prompt += `Create ${questionCount} questions of type: ${quizType}\n\n`;
 
+    // Add specific instructions based on quiz type
     switch (quizType) {
       case 'mcq':
         prompt += 'Create multiple choice questions with 4 options each. Provide clear explanations for the correct answers.';
@@ -278,6 +172,7 @@ class QuizGenerationService {
    */
   _parseQuizResponse(quizContent, quizType, documentName) {
     try {
+      // Try to extract JSON from the response
       const jsonMatch = quizContent.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
         throw new Error('No valid JSON found in response');
@@ -285,14 +180,17 @@ class QuizGenerationService {
 
       const quiz = JSON.parse(jsonMatch[0]);
       
+      // Validate quiz structure
       if (!quiz.questions || !Array.isArray(quiz.questions)) {
         throw new Error('Invalid quiz structure');
       }
 
+      // Set default title if not provided
       if (!quiz.title) {
         quiz.title = `Quiz on ${documentName}`;
       }
 
+      // Validate each question
       quiz.questions = quiz.questions.map((q, index) => ({
         id: q.id || `q${index + 1}`,
         type: q.type || quizType,
@@ -306,6 +204,7 @@ class QuizGenerationService {
       return quiz;
     } catch (error) {
       console.error('Error parsing quiz response:', error);
+      // Return a fallback quiz
       return this._createFallbackQuiz(quizType, documentName);
     }
   }

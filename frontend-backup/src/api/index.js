@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Create API instance with base URL
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -14,9 +14,7 @@ const api = axios.create({
 // Request interceptor for debugging
 api.interceptors.request.use(
   (config) => {
-    if (import.meta.env.VITE_ENABLE_DEBUG === 'true') {
-      console.log('API Request:', config.method?.toUpperCase(), config.url);
-    }
+    console.log('API Request:', config.method?.toUpperCase(), config.url);
     return config;
   },
   (error) => {
@@ -27,15 +25,11 @@ api.interceptors.request.use(
 // Response interceptor for error handling
 api.interceptors.response.use(
   (response) => {
-    if (import.meta.env.VITE_ENABLE_DEBUG === 'true') {
-      console.log('API Response:', response.status, response.config.url);
-    }
+    console.log('API Response:', response.status, response.config.url);
     return response;
   },
   (error) => {
-    if (import.meta.env.VITE_ENABLE_DEBUG === 'true') {
-      console.error('API Error:', error.response?.status, error.response?.data || error.message);
-    }
+    console.error('API Error:', error.response?.status, error.response?.data || error.message);
     
     // Handle specific error cases
     if (error.response?.status === 401) {
