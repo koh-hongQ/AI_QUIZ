@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# 환경변수 파일 (보안상 중요!)
+.env
+.env.local
+.env.production
+
+# 업로드된 파일들
+uploads/
+temp/
+logs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 가상환경
+venv/
+env/
+ENV/
+
+# 모델 파일들 (용량이 클 수 있음)
+models/
+*.bin
+*.model
