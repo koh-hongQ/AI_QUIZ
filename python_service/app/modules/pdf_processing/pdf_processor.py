@@ -47,6 +47,7 @@ class PDFPage:
     has_tables: bool = False
     bbox: Optional[Dict[str, float]] = None  # 페이지 경계 상자
     
+    # 글자수나 단어수가 0이면 text로부터 계산
     def __post_init__(self):
         if self.char_count == 0:
             self.char_count = len(self.text)
