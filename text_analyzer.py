@@ -409,22 +409,63 @@ class PPTPDFAnalyzer:
         return None
     
     def _find_y_boundaries_dbscan(self, elements: List[Dict]) -> Optional[Dict[str, float]]:
-        """Y DBSCAN"""
-        y_positions = [elem["bbox"][1] for elem in elements]
+        """Y DBSCAN - 기존 출력 형식 유지하면서 엣지 케이스 처리"""
+        
+        # 기본 유효성 검사
+        if len(elements) < 3:
+            return None
+        
+        # bbox 유효성 검사
+        import math
+        valid_elements = []
+        for elem in elements:
+            try:
+                bbox = elem.get("bbox", [])
+                if (len(bbox) >= 4 and 
+                    all(isinstance(x, (int, float)) for x in bbox) and
+                    all(not math.isnan(x) for x in bbox) and
+                    bbox[1] >= 0 and bbox[3] > 0):
+                    valid_elements.append(elem)
+            except:
+                continue
+        
+        if len(valid_elements) < 3:
+            return None
+        
+        # 기존 로직 그대로
+        y_positions = [elem["bbox"][1] for elem in valid_elements]
         y_array = np.array(y_positions).reshape(-1, 1)
         
-        page_height = max(elem["bbox"][1] + elem["bbox"][3] for elem in elements)
-        y_normalized = y_array / page_height
+        # ===== 개선된 정규화 추가 (옵션) =====
+        if hasattr(self, 'use_content_normalization') and self.use_content_normalization:
+            # 콘텐츠 기반 정규화
+            content_top = min(y_positions)
+            content_bottom = max(elem["bbox"][1] + elem["bbox"][3] for elem in valid_elements)
+            content_height = content_bottom - content_top
+            
+            if content_height < 10:  # 너무 작으면 기존 방식 사용
+                page_height = max(elem["bbox"][1] + elem["bbox"][3] for elem in elements)
+                y_normalized = y_array / page_height
+            else:
+                y_normalized = (y_array - content_top) / content_height
+        else:
+            # 기존 방식 (기본값)
+            page_height = max(elem["bbox"][1] + elem["bbox"][3] for elem in elements)
+            y_normalized = y_array / page_height
+        # ===== 개선 끝 =====
         
+        # 기존 DBSCAN 로직
         eps = self._calculate_adaptive_eps(y_normalized)
         clustering = DBSCAN(eps=eps, min_samples=2).fit(y_normalized)
         
         unique_labels = set(clustering.labels_)
         unique_labels.discard(-1)
         
+        # 기존과 동일한 조건
         if len(unique_labels) != 3:
             return None
         
+        # 기존과 동일한 클러스터 정보 수집
         cluster_info = []
         for label in unique_labels:
             cluster_indices = np.where(clustering.labels_ == label)[0]
@@ -439,6 +480,7 @@ class PPTPDFAnalyzer:
         
         cluster_info.sort(key=lambda x: x["center"])
         
+        # 기존과 동일한 출력 형식
         return {
             "upper": (cluster_info[0]["max"] + cluster_info[1]["min"]) / 2,
             "lower": (cluster_info[1]["max"] + cluster_info[2]["min"]) / 2
